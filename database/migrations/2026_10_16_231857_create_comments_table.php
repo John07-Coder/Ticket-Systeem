@@ -13,6 +13,17 @@ return new class extends Migration
     {
         Schema::create('comments', function (Blueprint $table) {
             $table->id();
+
+            $table->foreign('ticket_id')
+            ->constrained()
+            ->cascadeoOnDelete();
+
+            $table->foreignId('user_id')
+            ->constrained();
+
+            $table->text('message');
+            $table->boolean('is_internal')->default(false);
+            
             $table->timestamps();
         });
     }
