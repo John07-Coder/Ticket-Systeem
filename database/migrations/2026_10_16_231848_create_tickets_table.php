@@ -15,9 +15,21 @@ return new class extends Migration
             $table->id();
 
             $table->foreignId('created_by')
-            ->constant('users');
+            ->constrained('users');
 
-            
+            $table->foreignId('assigned_to')
+            ->nullable()
+            ->constrained('users')
+            ->nullOnDelete();
+
+            $table->foreignId('category_id')
+            ->constrained();
+
+            $table->string('title');
+            $table->text('description');
+
+            $table->string('status')->default('open');
+            $table->string('priority')->default('normal');
 
             $table->timestamps();
         });
