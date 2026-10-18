@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('comments', function (Blueprint $table) {
             $table->id();
 
-            $table->foreign('ticket_id')
+            $table->foreignId('ticket_id')
             ->constrained()
             ->cascadeoOnDelete();
 
@@ -23,7 +23,7 @@ return new class extends Migration
 
             $table->text('message');
             $table->boolean('is_internal')->default(false);
-            
+
             $table->timestamps();
         });
     }
