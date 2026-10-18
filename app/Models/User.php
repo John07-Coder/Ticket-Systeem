@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Ticket;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -47,6 +48,24 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
             'password' => 'hashed',
         ];
     }
+
+
+    public function createdTickets()
+    {
+        return $this->hasMany(Ticket::class, 'created_by');
+    }
+    
+    public function assignedTickets()
+    {
+        return $this->hasMany(Ticket::class, 'assigned_to');
+    }
+
+
+
+
+
+
+
 
     /**
      * Get the user's initials
