@@ -12,7 +12,7 @@
                 </p>
             </div>
 
-            <a href="{{ route('tickets.create') }}" class="rounded-lg bg-white px-4 py-2 text-sm font-medium text-zinc-900">Nieuw ticket</a>
+            <a href="{{ route('tickets.create') }}" class="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white">Nieuw ticket</a>
         </div>
 
         <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -21,7 +21,7 @@
             @include('partials.stat', ['label' => 'Gesloten', 'value' => $counts['closed'], 'href' => route('tickets.index', ['status' => 'closed'])])
 
             @if (auth()->user()->isStaff())
-                @include('partials.stat', ['label' => 'Niet toegewezen', 'value' => $unassigned, 'href' => route('tickets.index', ['status' => 'open'])])
+                @include('partials.stat', ['label' => 'Niet toegewezen', 'value' => $unassigned, 'href' => route('tickets.index', ['assigned' => 'none'])])
             @endif
         </div>
 

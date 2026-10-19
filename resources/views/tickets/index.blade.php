@@ -12,14 +12,14 @@
                 </p>
             </div>
 
-            <a href="{{ route('tickets.create') }}" class="rounded-lg bg-white px-4 py-2 text-sm font-medium text-zinc-900">Nieuw ticket</a>
+            <a href="{{ route('tickets.create') }}" class="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white">Nieuw ticket</a>
         </div>
 
         <div class="flex flex-wrap gap-2">
             @foreach (['' => 'Alles', 'open' => 'Open', 'in_progress' => 'In behandeling', 'closed' => 'Gesloten'] as $value => $label)
                 <a
                     href="{{ $value === '' ? route('tickets.index') : route('tickets.index', ['status' => $value]) }}"
-                    class="rounded-full px-3 py-1 text-sm {{ ($status ?? null) === ($value === '' ? null : $value) ? 'bg-white text-zinc-900' : 'bg-zinc-200 text-zinc-700 dark:bg-zinc-700 dark:text-zinc-200' }}"
+                    class="rounded-full px-3 py-1 text-sm {{ ($status ?? null) === ($value === '' ? null : $value) ? 'bg-zinc-900 text-white' : 'bg-zinc-200 text-zinc-700 dark:bg-zinc-700 dark:text-zinc-200' }}"
                 >
                     {{ $label }}
                 </a>
