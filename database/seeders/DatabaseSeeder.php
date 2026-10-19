@@ -28,6 +28,10 @@ class DatabaseSeeder extends Seeder
 
             $users = User::factory(19)->create()->push($testUser);
 
+            $this->call(UserRoleSeeder::class);
+
+            $agents = User::where('role', 'agent')->get();
+
             $categories = Category::factory()
                 ->count(5)
                 ->sequence(
@@ -41,6 +45,7 @@ class DatabaseSeeder extends Seeder
 
             Ticket::factory()
                 ->count(50)
+                ->state(fn () => ['assigned_to' => $agents->random()->id])
                 ->recycle($users)
                 ->recycle($categories)
                 ->has(Comment::factory()->count(3)->recycle($users))

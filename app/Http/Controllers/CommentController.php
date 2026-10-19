@@ -3,63 +3,59 @@
 namespace App\Http\Controllers;
 
 use App\Models\Comment;
+use App\Models\Ticket;
 use Illuminate\Http\Request;
 
 class CommentController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function store(Request $request, Ticket $ticket)
     {
-        //
+        $this->authorize('view', $ticket);
+
+        $data = $request->validate([
+            'message' => ['required', 'string', 'max:5000'],
+        ]);
+
+        $ticket->comments()->create([
+            'user_id' => $request->user()->id,
+            'message' => $data['message'],
+            'is_internal' => $request->user()->isStaff() && $request->boolean('is_internal'),
+        ]);
+
+        return redirect()
+            ->route('tickets.show', $ticket)
+            ->with('status', 'Reactie geplaatst.');
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
+    public function update(Request $request, Ticket $ticket, Comment $comment)
     {
-        //
+        $this->authorize('update', $comment);
+
+        $data = $request->validate([
+            'message' => ['required', 'string', 'max:5000'],
+        ]);
+
+        $comment->message = $data['message'];
+
+        if ($request->user()->isStaff()) {
+            $comment->is_internal = $request->boolean('is_internal');
+        }
+
+        $comment->save();
+
+        return redirect()
+            ->route('tickets.show', $ticket)
+            ->with('status', 'Reactie bijgewerkt.');
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    public function destroy(Ticket $ticket, Comment $comment)
     {
-        //
-    }
+        $this->authorize('delete', $comment);
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(Comment $comment)
-    {
-        //
-    }
+        $comment->delete();
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Comment $comment)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, Comment $comment)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Comment $comment)
-    {
-        //
+        return redirect()
+            ->route('tickets.show', $ticket)
+            ->with('status', 'Reactie verwijderd.');
     }
 }
