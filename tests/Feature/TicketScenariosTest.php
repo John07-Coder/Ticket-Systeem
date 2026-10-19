@@ -143,6 +143,52 @@ class TicketScenariosTest extends TestCase
         $this->assertModelMissing($ticket);
     }
 
+    public function test_assigned_agent_can_close_a_ticket_created_by_an_employee(): void
+    {
+        $jan = User::factory()->create(['role' => 'employee', 'name' => 'Jan']);
+        $piet = User::factory()->create(['role' => 'agent', 'name' => 'Piet']);
+        $other = User::factory()->create(['role' => 'agent']);
+        $category = Category::factory()->create();
+
+        $ticket = Ticket::factory()->create([
+            'created_by' => $jan->id,
+            'assigned_to' => $piet->id,
+            'category_id' => $category->id,
+            'status' => 'open',
+            'priority' => 'normal',
+            'title' => 'Printer werkt niet',
+            'description' => 'De printer op de eerste verdieping doet het niet.',
+        ]);
+
+        $this->actingAs($piet)
+            ->get(route('tickets.show', $ticket))
+            ->assertOk()
+            ->assertSee('>Bewerken<', false);
+
+        $this->actingAs($piet)
+            ->put(route('tickets.update', $ticket), [
+                'title' => 'Printer werkt niet',
+                'description' => 'De printer op de eerste verdieping doet het niet.',
+                'category_id' => $category->id,
+                'priority' => 'normal',
+                'status' => 'closed',
+                'assigned_to' => $piet->id,
+            ])
+            ->assertRedirect(route('tickets.show', $ticket));
+
+        $this->assertSame('closed', $ticket->fresh()->status);
+
+        $this->actingAs($piet)->delete(route('tickets.destroy', $ticket))->assertForbidden();
+        $this->actingAs($other)->put(route('tickets.update', $ticket), [
+            'title' => 'Printer werkt niet',
+            'description' => 'De printer op de eerste verdieping doet het niet.',
+            'category_id' => $category->id,
+            'priority' => 'normal',
+            'status' => 'open',
+            'assigned_to' => $other->id,
+        ])->assertForbidden();
+    }
+
     public function test_agent_cannot_change_a_ticket_created_by_someone_else(): void
     {
         $agent = User::factory()->create(['role' => 'agent']);

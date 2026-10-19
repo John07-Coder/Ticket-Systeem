@@ -24,15 +24,15 @@ class TicketPolicy
 
     public function update(User $user, Ticket $ticket): bool
     {
-        if ($user->role === 'admin') {
+        if ($user->role === 'admin' || $ticket->created_by === $user->id) {
             return true;
         }
 
-        return $ticket->created_by === $user->id;
+        return $user->role === 'agent' && $ticket->assigned_to === $user->id;
     }
 
     public function delete(User $user, Ticket $ticket): bool
     {
-        return $this->update($user, $ticket);
+        return $user->role === 'admin' || $ticket->created_by === $user->id;
     }
 }

@@ -15,11 +15,11 @@ return new class extends Migration
             $table->id();
 
             $table->foreignId('ticket_id')
-            ->constrained()
-            ->cascadeOnDelete();
+                ->constrained()
+                ->cascadeOnDelete();
 
             $table->foreignId('user_id')
-            ->constrained();
+                ->constrained();
 
             $table->text('message');
             $table->boolean('is_internal')->default(false);

@@ -15,15 +15,15 @@ return new class extends Migration
             $table->id();
 
             $table->foreignId('created_by')
-            ->constrained('users');
+                ->constrained('users');
 
             $table->foreignId('assigned_to')
-            ->nullable()
-            ->constrained('users')
-            ->nullOnDelete();
+                ->nullable()
+                ->constrained('users')
+                ->nullOnDelete();
 
             $table->foreignId('category_id')
-            ->constrained();
+                ->constrained();
 
             $table->string('title');
             $table->text('description');
