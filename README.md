@@ -37,7 +37,7 @@ Beschrijving, details en reacties. Een agent kan een interne notitie plaatsen di
 
 ## Starten
 
-Je hebt PHP 8.3, [Composer](https://getcomposer.org) en [Node.js](https://nodejs.org) nodig.
+Je hebt PHP 8.4, [Composer](https://getcomposer.org) en [Node.js](https://nodejs.org) nodig.
 
 ```bash
 git clone https://github.com/John07-Coder/Ticket-Systeem.git
