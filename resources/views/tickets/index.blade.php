@@ -7,7 +7,7 @@
                     @if (auth()->user()->role === 'employee')
                         Dit zijn de tickets die jij hebt gemaakt.
                     @else
-                        Jouw tickets staan apart van tickets die anderen hebben gemaakt.
+                        Links jouw tickets, rechts de tickets van anderen.
                     @endif
                 </p>
             </div>
@@ -19,25 +19,29 @@
             @foreach (['' => 'Alles', 'open' => 'Open', 'in_progress' => 'In behandeling', 'closed' => 'Gesloten'] as $value => $label)
                 <a
                     href="{{ $value === '' ? route('tickets.index') : route('tickets.index', ['status' => $value]) }}"
-                    class="pill {{ ($status ?? null) === ($value === '' ? null : $value) ? 'is-active' : '' }}"
+                    class="pill pill-{{ $value === '' ? 'all' : $value }} {{ ($status ?? null) === ($value === '' ? null : $value) ? 'is-active' : '' }}"
                 >
                     {{ $label }}
                 </a>
             @endforeach
         </nav>
 
-        @include('tickets.partials.list', [
-            'heading' => 'Jouw tickets',
-            'tickets' => $myTickets,
-            'empty' => 'Je hebt nog geen tickets gemaakt.',
-        ])
-
-        @if (auth()->user()->role !== 'employee')
+        <div class="board {{ auth()->user()->role === 'employee' ? '' : 'board-split' }}">
             @include('tickets.partials.list', [
-                'heading' => 'Tickets van anderen',
-                'tickets' => $otherTickets,
-                'empty' => 'Er zijn geen tickets van anderen.',
+                'tone' => 'mine',
+                'heading' => 'Jouw tickets',
+                'tickets' => $myTickets,
+                'empty' => 'Je hebt nog geen tickets gemaakt.',
             ])
-        @endif
+
+            @if (auth()->user()->role !== 'employee')
+                @include('tickets.partials.list', [
+                    'tone' => 'other',
+                    'heading' => 'Tickets van anderen',
+                    'tickets' => $otherTickets,
+                    'empty' => 'Er zijn geen tickets van anderen.',
+                ])
+            @endif
+        </div>
     </div>
 </x-layouts::app>
