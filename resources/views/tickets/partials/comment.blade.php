@@ -1,12 +1,15 @@
 <article class="panel comment {{ $comment->is_internal ? 'is-internal' : '' }}">
     <header>
-        <p>
-            {{ $comment->user->name ?? 'Onbekend' }}
-            · {{ $comment->created_at->format('d-m-Y H:i') }}
-            @if ($comment->is_internal)
-                · Intern
-            @endif
-        </p>
+        <div class="who-row">
+            <span class="avatar">{{ strtoupper(mb_substr($comment->user->name ?? '?', 0, 1)) }}</span>
+            <p>
+                <strong>{{ $comment->user->name ?? 'Onbekend' }}</strong>
+                <span>{{ $comment->created_at->format('d-m-Y H:i') }}</span>
+                @if ($comment->is_internal)
+                    <span class="badge badge-note">Intern</span>
+                @endif
+            </p>
+        </div>
 
         @can('delete', $comment)
             <form method="POST" action="{{ route('tickets.comments.destroy', [$ticket, $comment]) }}" onsubmit="return confirm('Deze reactie verwijderen?')">

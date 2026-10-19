@@ -1,6 +1,14 @@
 <x-layouts::app :title="__('Nieuw ticket')">
-    <h1>Nieuw ticket</h1>
-    <p class="lead">Beschrijf het probleem zo duidelijk mogelijk.</p>
+    <div class="page">
+        <a href="{{ route('tickets.index') }}" class="back">Terug naar tickets</a>
 
-    @include('tickets.partials.form')
+        <header class="page-head">
+            <div>
+                <h1>Nieuw ticket</h1>
+                <p class="lead">Beschrijf het probleem zo duidelijk mogelijk.</p>
+            </div>
+        </header>
+
+        @include('tickets.partials.form')
+    </div>
 </x-layouts::app>

@@ -2,7 +2,7 @@
     <div class="page">
         <a href="{{ route('tickets.index') }}" class="back">Terug naar tickets</a>
 
-        <header class="page-head">
+        <header class="hero hero-{{ $ticket->status }}">
             <div>
                 <h1>{{ $ticket->title }}</h1>
                 @include('tickets.partials.meta')
@@ -23,12 +23,33 @@
             </div>
         </header>
 
-        <div class="panel body">
-            <p>{{ $ticket->description }}</p>
-            <dl class="facts">
-                <div>Aangemaakt op {{ $ticket->created_at->format('d-m-Y H:i') }}</div>
-                <div>Toegewezen aan {{ $ticket->assignee->name ?? 'niemand' }}</div>
-            </dl>
+        <div class="split">
+            <article class="panel sheet">
+                <h2>Beschrijving</h2>
+                <p>{{ $ticket->description }}</p>
+            </article>
+
+            <aside class="panel sheet">
+                <h2>Details</h2>
+                <dl class="facts">
+                    <div>
+                        <dt>Aangemaakt</dt>
+                        <dd>{{ $ticket->created_at->format('d-m-Y H:i') }}</dd>
+                    </div>
+                    <div>
+                        <dt>Door</dt>
+                        <dd>{{ $ticket->creator->name ?? 'Onbekend' }}</dd>
+                    </div>
+                    <div>
+                        <dt>Categorie</dt>
+                        <dd>{{ $ticket->category->name ?? 'Geen' }}</dd>
+                    </div>
+                    <div>
+                        <dt>Toegewezen</dt>
+                        <dd>{{ $ticket->assignee->name ?? 'Niemand' }}</dd>
+                    </div>
+                </dl>
+            </aside>
         </div>
 
         <section>
