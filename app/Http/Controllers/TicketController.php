@@ -7,6 +7,7 @@ use App\Models\Ticket;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class TicketController extends Controller
@@ -33,9 +34,13 @@ class TicketController extends Controller
             $query->whereNull('assigned_to')->where('status', '!=', 'closed');
         }
 
-        $tickets = $query->latest()->get();
-        $myTickets = $tickets->where('created_by', $user->id);
-        $otherTickets = $tickets->where('created_by', '!=', $user->id);
+        if ($user->role === 'employee') {
+            $myTickets = $query->latest()->paginate(15)->withQueryString();
+            $otherTickets = collect();
+        } else {
+            $myTickets = (clone $query)->where('created_by', $user->id)->latest()->paginate(15, ['*'], 'mine')->withQueryString();
+            $otherTickets = (clone $query)->where('created_by', '!=', $user->id)->latest()->paginate(15, ['*'], 'others')->withQueryString();
+        }
 
         return view('tickets.index', compact('myTickets', 'otherTickets', 'status'));
     }
@@ -64,11 +69,13 @@ class TicketController extends Controller
         ];
 
         if ($user->role !== 'employee') {
-            $rules['assigned_to'] = ['nullable', 'exists:users,id'];
+            $rules['assigned_to'] = ['nullable', Rule::exists('users', 'id')->where(fn ($query) => $query->whereIn('role', ['admin', 'agent']))];
             $rules['status'] = ['required', 'in:open,in_progress,closed'];
         }
 
-        $data = $request->validate($rules);
+        $data = $request->validate($rules, [
+            'assigned_to.exists' => 'Wijs het ticket toe aan een agent of een admin.',
+        ]);
 
         $ticket = Ticket::create([
             'created_by' => $user->id,
@@ -126,11 +133,13 @@ class TicketController extends Controller
         ];
 
         if ($user->role !== 'employee') {
-            $rules['assigned_to'] = ['nullable', 'exists:users,id'];
+            $rules['assigned_to'] = ['nullable', Rule::exists('users', 'id')->where(fn ($query) => $query->whereIn('role', ['admin', 'agent']))];
             $rules['status'] = ['required', 'in:open,in_progress,closed'];
         }
 
-        $data = $request->validate($rules);
+        $data = $request->validate($rules, [
+            'assigned_to.exists' => 'Wijs het ticket toe aan een agent of een admin.',
+        ]);
 
         $ticket->title = $data['title'];
         $ticket->description = $data['description'];

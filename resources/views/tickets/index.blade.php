@@ -31,6 +31,7 @@
                 'tone' => 'mine',
                 'heading' => 'Jouw tickets',
                 'tickets' => $myTickets,
+                'total' => $myTickets->total(),
                 'empty' => 'Je hebt nog geen tickets gemaakt.',
             ])
 
@@ -39,6 +40,7 @@
                     'tone' => 'other',
                     'heading' => 'Tickets van anderen',
                     'tickets' => $otherTickets,
+                    'total' => $otherTickets->total(),
                     'empty' => 'Er zijn geen tickets van anderen.',
                 ])
             @endif
