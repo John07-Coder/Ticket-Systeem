@@ -2,64 +2,26 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Dashboard;
+use App\Models\Ticket;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function index(Request $request)
     {
-        //
-    }
+        $user = $request->user();
+        $tickets = Ticket::query()->visibleTo($user);
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(Dashboard $dashboard)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Dashboard $dashboard)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, Dashboard $dashboard)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Dashboard $dashboard)
-    {
-        //
+        return view('dashboard', [
+            'counts' => [
+                'open' => (clone $tickets)->where('status', 'open')->count(),
+                'in_progress' => (clone $tickets)->where('status', 'in_progress')->count(),
+                'closed' => (clone $tickets)->where('status', 'closed')->count(),
+            ],
+            'unassigned' => $user->isStaff()
+                ? (clone $tickets)->whereNull('assigned_to')->where('status', '!=', 'closed')->count()
+                : null,
+            'recent' => (clone $tickets)->with(['category', 'creator'])->latest()->limit(6)->get(),
+        ]);
     }
 }

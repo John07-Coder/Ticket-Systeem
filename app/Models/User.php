@@ -67,6 +67,11 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
 
 
 
+    public function isStaff(): bool
+    {
+        return in_array($this->role, ['admin', 'agent'], true);
+    }
+
     /**
      * Get the user's initials
      */

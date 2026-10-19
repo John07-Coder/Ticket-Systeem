@@ -2,76 +2,163 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Category;
 use App\Models\Ticket;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class TicketController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function index(Request $request)
     {
+        $this->authorize('viewAny', Ticket::class);
 
-            $user = auth()->user();
+        $status = $request->string('status')->toString();
 
-    $query = Ticket::with(['category', 'creator']);
+        if (! in_array($status, ['open', 'in_progress', 'closed'], true)) {
+            $status = null;
+        }
 
-    if ($user->role === 'employee') {
-        $query->where('created_by', $user->id);
+        $tickets = Ticket::query()
+            ->visibleTo($request->user())
+            ->with(['category', 'creator', 'assignee'])
+            ->when($status, fn ($query) => $query->where('status', $status))
+            ->latest()
+            ->get();
+
+        return view('tickets.index', [
+            'tickets' => $tickets,
+            'status' => $status,
+        ]);
     }
 
-    $tickets = $query->latest()->get();
-
-    return view('tickets.index', compact('tickets'));
-
-    }
-
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create()
     {
-        //
+        $this->authorize('create', Ticket::class);
+
+        return view('tickets.create', $this->formData());
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
-        //
+        $this->authorize('create', Ticket::class);
+
+        $data = $this->validated($request);
+
+        $ticket = Ticket::create([
+            'created_by' => $request->user()->id,
+            'assigned_to' => $request->user()->isStaff() ? $data['assigned_to'] : null,
+            'category_id' => $data['category_id'],
+            'title' => $data['title'],
+            'description' => $data['description'],
+            'status' => $request->user()->isStaff() ? $data['status'] : 'open',
+            'priority' => $data['priority'],
+        ]);
+
+        return redirect()
+            ->route('tickets.show', $ticket)
+            ->with('status', 'Ticket aangemaakt.');
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(Ticket $ticket)
+    public function show(Request $request, Ticket $ticket)
     {
-        //
+        $this->authorize('view', $ticket);
+
+        $ticket->load([
+            'category',
+            'creator',
+            'assignee',
+            'comments' => function ($query) use ($request) {
+                $query->with('user')->oldest();
+
+                if (! $request->user()->isStaff()) {
+                    $query->where('is_internal', false);
+                }
+            },
+        ]);
+
+        return view('tickets.show', compact('ticket'));
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
     public function edit(Ticket $ticket)
     {
-        //
+        $this->authorize('update', $ticket);
+
+        return view('tickets.edit', [
+            'ticket' => $ticket,
+            ...$this->formData(),
+        ]);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(Request $request, Ticket $ticket)
     {
-        //
+        $this->authorize('update', $ticket);
+
+        $data = $this->validated($request);
+
+        $ticket->fill([
+            'category_id' => $data['category_id'],
+            'title' => $data['title'],
+            'description' => $data['description'],
+            'priority' => $data['priority'],
+        ]);
+
+        if ($request->user()->isStaff()) {
+            $ticket->assigned_to = $data['assigned_to'];
+            $ticket->status = $data['status'];
+        }
+
+        $ticket->save();
+
+        return redirect()
+            ->route('tickets.show', $ticket)
+            ->with('status', 'Ticket bijgewerkt.');
+    }
+
+    public function destroy(Ticket $ticket)
+    {
+        $this->authorize('delete', $ticket);
+
+        $ticket->delete();
+
+        return redirect()
+            ->route('tickets.index')
+            ->with('status', 'Ticket verwijderd.');
     }
 
     /**
-     * Remove the specified resource from storage.
+     * @return array{categories: \Illuminate\Database\Eloquent\Collection<int, Category>, agents: \Illuminate\Database\Eloquent\Collection<int, User>}
      */
-    public function destroy(Ticket $ticket)
+    private function formData(): array
     {
-        //
+        return [
+            'categories' => Category::query()->orderBy('name')->get(),
+            'agents' => User::query()->whereIn('role', ['admin', 'agent'])->orderBy('name')->get(),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function validated(Request $request): array
+    {
+        $rules = [
+            'title' => ['required', 'string', 'max:255'],
+            'description' => ['required', 'string'],
+            'category_id' => ['required', 'exists:categories,id'],
+            'priority' => ['required', Rule::in(['low', 'normal', 'high'])],
+        ];
+
+        if ($request->user()->isStaff()) {
+            $request->merge([
+                'assigned_to' => $request->input('assigned_to') ?: null,
+            ]);
+
+            $rules['assigned_to'] = ['nullable', 'exists:users,id'];
+            $rules['status'] = ['required', Rule::in(['open', 'in_progress', 'closed'])];
+        }
+
+        return $request->validate($rules);
     }
 }

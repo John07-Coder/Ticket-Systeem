@@ -11,6 +11,25 @@ class Ticket extends Model
     /** @use HasFactory<TicketFactory> */
     use HasFactory;
 
+    protected $fillable = [
+        'created_by',
+        'assigned_to',
+        'category_id',
+        'title',
+        'description',
+        'status',
+        'priority',
+    ];
+
+    public function scopeVisibleTo($query, User $user)
+    {
+        if (! $user->isStaff()) {
+            $query->where('created_by', $user->id);
+        }
+
+        return $query;
+    }
+
 public function creator()
 {
     return $this->belongsTo(User::class, 'created_by');
