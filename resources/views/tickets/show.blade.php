@@ -56,7 +56,7 @@
                 </label>
             @endif
 
-            <button type="submit" class="self-start rounded-lg bg-white px-4 py-2 text-sm font-medium text-zinc-900">Plaatsen</button>
+            <button type="submit" class="self-start rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white">Plaatsen</button>
         </form>
     </section>
 </x-layouts::app>

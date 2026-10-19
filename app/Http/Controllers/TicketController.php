@@ -20,16 +20,20 @@ class TicketController extends Controller
             $status = null;
         }
 
+        $unassigned = $request->user()->isStaff() && $request->query('assigned') === 'none';
+
         $tickets = Ticket::query()
             ->visibleTo($request->user())
             ->with(['category', 'creator', 'assignee'])
             ->when($status, fn ($query) => $query->where('status', $status))
+            ->when($unassigned, fn ($query) => $query->whereNull('assigned_to')->where('status', '!=', 'closed'))
             ->latest()
             ->get();
 
         return view('tickets.index', [
             'tickets' => $tickets,
             'status' => $status,
+            'unassigned' => $unassigned,
         ]);
     }
 
