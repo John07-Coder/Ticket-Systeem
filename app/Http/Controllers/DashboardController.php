@@ -9,6 +9,8 @@ class DashboardController extends Controller
 {
     public function index(): View
     {
+        $this->authorize('viewAny', Ticket::class);
+
         $user = request()->user();
 
         $query = Ticket::query();
