@@ -50,7 +50,7 @@
                     <textarea name="message" rows="4" required>{{ old('message') }}</textarea>
                 </label>
 
-                @if (auth()->user()->isStaff())
+                @if (auth()->user()->role !== 'employee')
                     <label class="check">
                         <input type="checkbox" name="is_internal" value="1" @checked(old('is_internal'))>
                         Interne notitie, niet zichtbaar voor de melder

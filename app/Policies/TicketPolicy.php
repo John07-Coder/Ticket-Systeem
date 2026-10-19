@@ -24,11 +24,15 @@ class TicketPolicy
 
     public function update(User $user, Ticket $ticket): bool
     {
-        return $this->view($user, $ticket);
+        if ($user->role === 'admin') {
+            return true;
+        }
+
+        return $ticket->created_by === $user->id;
     }
 
     public function delete(User $user, Ticket $ticket): bool
     {
-        return $user->isStaff();
+        return $this->update($user, $ticket);
     }
 }

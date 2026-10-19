@@ -30,8 +30,10 @@ class TicketController extends Controller
         }
 
         $tickets = $query->latest()->get();
+        $myTickets = $tickets->where('created_by', $user->id);
+        $otherTickets = $tickets->where('created_by', '!=', $user->id);
 
-        return view('tickets.index', compact('tickets', 'status'));
+        return view('tickets.index', compact('myTickets', 'otherTickets', 'status'));
     }
 
     public function create()
@@ -98,7 +100,7 @@ class TicketController extends Controller
     {
         $user = request()->user();
 
-        if ($user->role === 'employee' && $ticket->created_by !== $user->id) {
+        if ($user->role !== 'admin' && $ticket->created_by !== $user->id) {
             abort(403);
         }
 
@@ -112,7 +114,7 @@ class TicketController extends Controller
     {
         $user = $request->user();
 
-        if ($user->role === 'employee' && $ticket->created_by !== $user->id) {
+        if ($user->role !== 'admin' && $ticket->created_by !== $user->id) {
             abort(403);
         }
 
@@ -149,7 +151,7 @@ class TicketController extends Controller
     {
         $user = request()->user();
 
-        if ($user->role === 'employee') {
+        if ($user->role !== 'admin' && $ticket->created_by !== $user->id) {
             abort(403);
         }
 

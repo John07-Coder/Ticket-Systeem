@@ -3,25 +3,33 @@
 namespace App\Http\Controllers;
 
 use App\Models\Ticket;
-use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
-    public function index(Request $request)
+    public function index()
     {
-        $user = $request->user();
-        $tickets = Ticket::query()->visibleTo($user);
+        $user = request()->user();
 
-        return view('dashboard', [
-            'counts' => [
-                'open' => (clone $tickets)->where('status', 'open')->count(),
-                'in_progress' => (clone $tickets)->where('status', 'in_progress')->count(),
-                'closed' => (clone $tickets)->where('status', 'closed')->count(),
-            ],
-            'unassigned' => $user->isStaff()
-                ? (clone $tickets)->whereNull('assigned_to')->where('status', '!=', 'closed')->count()
-                : null,
-            'recent' => (clone $tickets)->with(['category', 'creator'])->latest()->limit(6)->get(),
-        ]);
+        $query = Ticket::query();
+
+        if ($user->role === 'employee') {
+            $query->where('created_by', $user->id);
+        }
+
+        $counts = [
+            'open' => (clone $query)->where('status', 'open')->count(),
+            'in_progress' => (clone $query)->where('status', 'in_progress')->count(),
+            'closed' => (clone $query)->where('status', 'closed')->count(),
+        ];
+
+        $unassigned = null;
+
+        if ($user->role !== 'employee') {
+            $unassigned = (clone $query)->whereNull('assigned_to')->where('status', '!=', 'closed')->count();
+        }
+
+        $recent = (clone $query)->with(['category', 'creator'])->latest()->limit(6)->get();
+
+        return view('dashboard', compact('counts', 'unassigned', 'recent'));
     }
 }

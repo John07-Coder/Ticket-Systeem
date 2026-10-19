@@ -4,10 +4,10 @@
             <div>
                 <h1>Dashboard</h1>
                 <p class="lead">
-                    @if (auth()->user()->isStaff())
-                        Alle tickets van de helpdesk.
-                    @else
+                    @if (auth()->user()->role === 'employee')
                         Jouw tickets.
+                    @else
+                        Jouw tickets en tickets die anderen hebben gemaakt.
                     @endif
                 </p>
             </div>
@@ -20,7 +20,7 @@
             @include('partials.stat', ['label' => 'In behandeling', 'value' => $counts['in_progress'], 'href' => route('tickets.index', ['status' => 'in_progress'])])
             @include('partials.stat', ['label' => 'Gesloten', 'value' => $counts['closed'], 'href' => route('tickets.index', ['status' => 'closed'])])
 
-            @if (auth()->user()->isStaff())
+            @if (auth()->user()->role !== 'employee')
                 @include('partials.stat', ['label' => 'Niet toegewezen', 'value' => $unassigned, 'href' => route('tickets.index', ['assigned' => 'none'])])
             @endif
         </div>

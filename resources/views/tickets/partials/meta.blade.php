@@ -19,7 +19,9 @@
     @if ($ticket->category)
         <span>· {{ $ticket->category->name }}</span>
     @endif
-    @if ($ticket->creator)
-        <span>· {{ $ticket->creator->name }}</span>
+    @if ($ticket->created_by === auth()->id())
+        <span class="badge badge-mine">Van jou</span>
+    @elseif ($ticket->creator)
+        <span>Aangemaakt door {{ $ticket->creator->name }}</span>
     @endif
 </p>

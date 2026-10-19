@@ -60,7 +60,7 @@
         </select>
     </label>
 
-    @if (auth()->user()->isStaff())
+    @if (auth()->user()->role !== 'employee')
         <label class="field">
             Toegewezen aan
             <select name="assigned_to">

@@ -254,6 +254,7 @@ select:focus[data-flux-control] {
     font-weight: 600;
 }
 
+[data-flux-main] .badge-mine { background: #dbeafe; color: #1e3a8a; }
 [data-flux-main] .badge-open { background: #d1fae5; color: #065f46; }
 [data-flux-main] .badge-in_progress { background: #fef3c7; color: #92400e; }
 [data-flux-main] .badge-closed { background: #e4e4e7; color: #3f3f46; }
