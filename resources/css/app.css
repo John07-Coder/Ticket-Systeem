@@ -196,6 +196,36 @@ select:focus[data-flux-control] {
 [data-flux-main] .row-in_progress { border-left-color: #f59e0b; }
 [data-flux-main] .row-closed { border-left-color: #818cf8; }
 
+[data-flux-main] .locked {
+    margin: 0;
+    border-radius: 0.6rem;
+    background: var(--soft);
+    color: var(--ink);
+    padding: 0.55rem 0.7rem;
+    font-weight: 500;
+    white-space: pre-line;
+}
+
+[data-flux-main] .history p {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    margin: 0;
+    padding: 0.85rem 1.1rem;
+    border-top: 1px solid var(--line);
+    color: var(--ink);
+}
+
+[data-flux-main] .history p:first-child {
+    border-top: 0;
+}
+
+[data-flux-main] .history span {
+    color: var(--muted);
+    font-size: 0.8rem;
+    white-space: nowrap;
+}
+
 [data-flux-main] .pager {
     margin-top: 0.85rem;
 }
@@ -433,6 +463,7 @@ select:focus[data-flux-control] {
 
 [data-flux-main] .form .field:has(input[type="text"]),
 [data-flux-main] .form .field:has(textarea),
+[data-flux-main] .form .field:has(.locked),
 [data-flux-main] .form .errors,
 [data-flux-main] .form .actions,
 [data-flux-main] .form .check,

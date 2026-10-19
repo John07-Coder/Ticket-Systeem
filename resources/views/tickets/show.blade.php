@@ -9,6 +9,13 @@
             </div>
 
             <div class="actions">
+                @can('claim', $ticket)
+                    <form method="POST" action="{{ route('tickets.claim', $ticket) }}">
+                        @csrf
+                        <button type="submit" class="btn">Overnemen</button>
+                    </form>
+                @endcan
+
                 @can('update', $ticket)
                     <a href="{{ route('tickets.edit', $ticket) }}" class="btn-quiet">Bewerken</a>
                 @endcan
@@ -51,6 +58,11 @@
                 </dl>
             </aside>
         </div>
+
+        <section>
+            <h2>Geschiedenis</h2>
+            @include('tickets.partials.history')
+        </section>
 
         <section>
             <h2>Reacties</h2>
