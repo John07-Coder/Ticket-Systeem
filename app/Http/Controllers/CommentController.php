@@ -4,11 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\Comment;
 use App\Models\Ticket;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 class CommentController extends Controller
 {
-    public function store(Request $request, Ticket $ticket)
+    public function store(Request $request, Ticket $ticket): RedirectResponse
     {
         $user = $request->user();
 
@@ -29,7 +30,7 @@ class CommentController extends Controller
         return redirect()->route('tickets.show', $ticket)->with('status', 'Reactie geplaatst.');
     }
 
-    public function update(Request $request, Ticket $ticket, Comment $comment)
+    public function update(Request $request, Ticket $ticket, Comment $comment): RedirectResponse
     {
         $user = $request->user();
 
@@ -52,7 +53,7 @@ class CommentController extends Controller
         return redirect()->route('tickets.show', $ticket)->with('status', 'Reactie bijgewerkt.');
     }
 
-    public function destroy(Ticket $ticket, Comment $comment)
+    public function destroy(Ticket $ticket, Comment $comment): RedirectResponse
     {
         $user = request()->user();
 

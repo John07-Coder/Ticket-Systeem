@@ -3,10 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Ticket;
+use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
-    public function index()
+    public function index(): View
     {
         $user = request()->user();
 

@@ -5,11 +5,13 @@ namespace App\Http\Controllers;
 use App\Models\Category;
 use App\Models\Ticket;
 use App\Models\User;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\View\View;
 
 class TicketController extends Controller
 {
-    public function index()
+    public function index(): View
     {
         $user = request()->user();
 
@@ -36,7 +38,7 @@ class TicketController extends Controller
         return view('tickets.index', compact('myTickets', 'otherTickets', 'status'));
     }
 
-    public function create()
+    public function create(): View
     {
         $categories = Category::orderBy('name')->get();
         $agents = User::whereIn('role', ['admin', 'agent'])->orderBy('name')->get();
@@ -44,7 +46,7 @@ class TicketController extends Controller
         return view('tickets.create', compact('categories', 'agents'));
     }
 
-    public function store(Request $request)
+    public function store(Request $request): RedirectResponse
     {
         $user = $request->user();
 
@@ -75,7 +77,7 @@ class TicketController extends Controller
         return redirect()->route('tickets.show', $ticket)->with('status', 'Ticket aangemaakt.');
     }
 
-    public function show(Ticket $ticket)
+    public function show(Ticket $ticket): View
     {
         $user = request()->user();
 
@@ -96,11 +98,11 @@ class TicketController extends Controller
         return view('tickets.show', compact('ticket'));
     }
 
-    public function edit(Ticket $ticket)
+    public function edit(Ticket $ticket): View
     {
         $user = request()->user();
 
-        if ($user->role !== 'admin' && $ticket->created_by !== $user->id) {
+        if ($user->role !== 'admin' && $ticket->created_by !== $user->id && ! ($user->role === 'agent' && $ticket->assigned_to === $user->id)) {
             abort(403);
         }
 
@@ -110,11 +112,11 @@ class TicketController extends Controller
         return view('tickets.edit', compact('ticket', 'categories', 'agents'));
     }
 
-    public function update(Request $request, Ticket $ticket)
+    public function update(Request $request, Ticket $ticket): RedirectResponse
     {
         $user = $request->user();
 
-        if ($user->role !== 'admin' && $ticket->created_by !== $user->id) {
+        if ($user->role !== 'admin' && $ticket->created_by !== $user->id && ! ($user->role === 'agent' && $ticket->assigned_to === $user->id)) {
             abort(403);
         }
 
@@ -147,7 +149,7 @@ class TicketController extends Controller
         return redirect()->route('tickets.show', $ticket)->with('status', 'Ticket bijgewerkt.');
     }
 
-    public function destroy(Ticket $ticket)
+    public function destroy(Ticket $ticket): RedirectResponse
     {
         $user = request()->user();
 

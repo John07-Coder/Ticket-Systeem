@@ -3,8 +3,11 @@
 namespace App\Models;
 
 use Database\Factories\TicketFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Ticket extends Model
 {
@@ -21,7 +24,11 @@ class Ticket extends Model
         'priority',
     ];
 
-    public function scopeVisibleTo($query, User $user)
+    /**
+     * @param  Builder<Ticket>  $query
+     * @return Builder<Ticket>
+     */
+    public function scopeVisibleTo(Builder $query, User $user): Builder
     {
         if (! $user->isStaff()) {
             $query->where('created_by', $user->id);
@@ -30,24 +37,27 @@ class Ticket extends Model
         return $query;
     }
 
-public function creator()
-{
-    return $this->belongsTo(User::class, 'created_by');
-}
+    /** @return BelongsTo<User, $this> */
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
 
-public function assignee()
-{
-    return $this->belongsTo(User::class, 'assigned_to');
-}
+    /** @return BelongsTo<User, $this> */
+    public function assignee(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_to');
+    }
 
-public function category()
-{
-return $this->belongsTo(Category::class);
-}
+    /** @return BelongsTo<Category, $this> */
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(Category::class);
+    }
 
-public function comments()
-{
-    return $this->hasMany(Comment::class);
-}
-
+    /** @return HasMany<Comment, $this> */
+    public function comments(): HasMany
+    {
+        return $this->hasMany(Comment::class);
+    }
 }

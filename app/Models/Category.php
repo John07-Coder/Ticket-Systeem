@@ -5,22 +5,21 @@ namespace App\Models;
 use Database\Factories\CategoryFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Category extends Model
 {
     /** @use HasFactory<CategoryFactory> */
     use HasFactory;
-    
-protected $fillable = [
-    'name',
-    'description',
-];
 
-public function tickets()
-{
-    return $this->hasMany(Ticket::class);
-}
+    protected $fillable = [
+        'name',
+        'description',
+    ];
 
-
-
+    /** @return HasMany<Ticket, $this> */
+    public function tickets(): HasMany
+    {
+        return $this->hasMany(Ticket::class);
+    }
 }
