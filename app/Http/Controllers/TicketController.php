@@ -6,163 +6,155 @@ use App\Models\Category;
 use App\Models\Ticket;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 class TicketController extends Controller
 {
-    public function index(Request $request)
+    public function index()
     {
-        $this->authorize('viewAny', Ticket::class);
+        $user = request()->user();
 
-        $status = $request->string('status')->toString();
+        $query = Ticket::with(['category', 'creator', 'assignee']);
 
-        if (! in_array($status, ['open', 'in_progress', 'closed'], true)) {
-            $status = null;
+        if ($user->role === 'employee') {
+            $query->where('created_by', $user->id);
         }
 
-        $unassigned = $request->user()->isStaff() && $request->query('assigned') === 'none';
+        $status = request('status');
 
-        $tickets = Ticket::query()
-            ->visibleTo($request->user())
-            ->with(['category', 'creator', 'assignee'])
-            ->when($status, fn ($query) => $query->where('status', $status))
-            ->when($unassigned, fn ($query) => $query->whereNull('assigned_to')->where('status', '!=', 'closed'))
-            ->latest()
-            ->get();
+        if (in_array($status, ['open', 'in_progress', 'closed'])) {
+            $query->where('status', $status);
+        }
 
-        return view('tickets.index', [
-            'tickets' => $tickets,
-            'status' => $status,
-            'unassigned' => $unassigned,
-        ]);
+        if ($user->role !== 'employee' && request('assigned') === 'none') {
+            $query->whereNull('assigned_to')->where('status', '!=', 'closed');
+        }
+
+        $tickets = $query->latest()->get();
+
+        return view('tickets.index', compact('tickets', 'status'));
     }
 
     public function create()
     {
-        $this->authorize('create', Ticket::class);
+        $categories = Category::orderBy('name')->get();
+        $agents = User::whereIn('role', ['admin', 'agent'])->orderBy('name')->get();
 
-        return view('tickets.create', $this->formData());
+        return view('tickets.create', compact('categories', 'agents'));
     }
 
     public function store(Request $request)
     {
-        $this->authorize('create', Ticket::class);
+        $user = $request->user();
 
-        $data = $this->validated($request);
+        $rules = [
+            'title' => ['required', 'string', 'max:255'],
+            'description' => ['required', 'string'],
+            'category_id' => ['required', 'exists:categories,id'],
+            'priority' => ['required', 'in:low,normal,high'],
+        ];
+
+        if ($user->role !== 'employee') {
+            $rules['assigned_to'] = ['nullable', 'exists:users,id'];
+            $rules['status'] = ['required', 'in:open,in_progress,closed'];
+        }
+
+        $data = $request->validate($rules);
 
         $ticket = Ticket::create([
-            'created_by' => $request->user()->id,
-            'assigned_to' => $request->user()->isStaff() ? $data['assigned_to'] : null,
+            'created_by' => $user->id,
+            'assigned_to' => $user->role === 'employee' ? null : ($data['assigned_to'] ?? null),
             'category_id' => $data['category_id'],
             'title' => $data['title'],
             'description' => $data['description'],
-            'status' => $request->user()->isStaff() ? $data['status'] : 'open',
+            'status' => $user->role === 'employee' ? 'open' : $data['status'],
             'priority' => $data['priority'],
         ]);
 
-        return redirect()
-            ->route('tickets.show', $ticket)
-            ->with('status', 'Ticket aangemaakt.');
+        return redirect()->route('tickets.show', $ticket)->with('status', 'Ticket aangemaakt.');
     }
 
-    public function show(Request $request, Ticket $ticket)
+    public function show(Ticket $ticket)
     {
-        $this->authorize('view', $ticket);
+        $user = request()->user();
 
-        $ticket->load([
-            'category',
-            'creator',
-            'assignee',
-            'comments' => function ($query) use ($request) {
-                $query->with('user')->oldest();
+        if ($user->role === 'employee' && $ticket->created_by !== $user->id) {
+            abort(403);
+        }
 
-                if (! $request->user()->isStaff()) {
-                    $query->where('is_internal', false);
-                }
-            },
-        ]);
+        $ticket->load(['category', 'creator', 'assignee']);
+
+        $comments = $ticket->comments()->with('user')->oldest();
+
+        if ($user->role === 'employee') {
+            $comments->where('is_internal', false);
+        }
+
+        $ticket->setRelation('comments', $comments->get());
 
         return view('tickets.show', compact('ticket'));
     }
 
     public function edit(Ticket $ticket)
     {
-        $this->authorize('update', $ticket);
+        $user = request()->user();
 
-        return view('tickets.edit', [
-            'ticket' => $ticket,
-            ...$this->formData(),
-        ]);
+        if ($user->role === 'employee' && $ticket->created_by !== $user->id) {
+            abort(403);
+        }
+
+        $categories = Category::orderBy('name')->get();
+        $agents = User::whereIn('role', ['admin', 'agent'])->orderBy('name')->get();
+
+        return view('tickets.edit', compact('ticket', 'categories', 'agents'));
     }
 
     public function update(Request $request, Ticket $ticket)
     {
-        $this->authorize('update', $ticket);
+        $user = $request->user();
 
-        $data = $this->validated($request);
+        if ($user->role === 'employee' && $ticket->created_by !== $user->id) {
+            abort(403);
+        }
 
-        $ticket->fill([
-            'category_id' => $data['category_id'],
-            'title' => $data['title'],
-            'description' => $data['description'],
-            'priority' => $data['priority'],
-        ]);
+        $rules = [
+            'title' => ['required', 'string', 'max:255'],
+            'description' => ['required', 'string'],
+            'category_id' => ['required', 'exists:categories,id'],
+            'priority' => ['required', 'in:low,normal,high'],
+        ];
 
-        if ($request->user()->isStaff()) {
-            $ticket->assigned_to = $data['assigned_to'];
+        if ($user->role !== 'employee') {
+            $rules['assigned_to'] = ['nullable', 'exists:users,id'];
+            $rules['status'] = ['required', 'in:open,in_progress,closed'];
+        }
+
+        $data = $request->validate($rules);
+
+        $ticket->title = $data['title'];
+        $ticket->description = $data['description'];
+        $ticket->category_id = $data['category_id'];
+        $ticket->priority = $data['priority'];
+
+        if ($user->role !== 'employee') {
+            $ticket->assigned_to = $data['assigned_to'] ?? null;
             $ticket->status = $data['status'];
         }
 
         $ticket->save();
 
-        return redirect()
-            ->route('tickets.show', $ticket)
-            ->with('status', 'Ticket bijgewerkt.');
+        return redirect()->route('tickets.show', $ticket)->with('status', 'Ticket bijgewerkt.');
     }
 
     public function destroy(Ticket $ticket)
     {
-        $this->authorize('delete', $ticket);
+        $user = request()->user();
+
+        if ($user->role === 'employee') {
+            abort(403);
+        }
 
         $ticket->delete();
 
-        return redirect()
-            ->route('tickets.index')
-            ->with('status', 'Ticket verwijderd.');
-    }
-
-    /**
-     * @return array{categories: \Illuminate\Database\Eloquent\Collection<int, Category>, agents: \Illuminate\Database\Eloquent\Collection<int, User>}
-     */
-    private function formData(): array
-    {
-        return [
-            'categories' => Category::query()->orderBy('name')->get(),
-            'agents' => User::query()->whereIn('role', ['admin', 'agent'])->orderBy('name')->get(),
-        ];
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function validated(Request $request): array
-    {
-        $rules = [
-            'title' => ['required', 'string', 'max:255'],
-            'description' => ['required', 'string'],
-            'category_id' => ['required', 'exists:categories,id'],
-            'priority' => ['required', Rule::in(['low', 'normal', 'high'])],
-        ];
-
-        if ($request->user()->isStaff()) {
-            $request->merge([
-                'assigned_to' => $request->input('assigned_to') ?: null,
-            ]);
-
-            $rules['assigned_to'] = ['nullable', 'exists:users,id'];
-            $rules['status'] = ['required', Rule::in(['open', 'in_progress', 'closed'])];
-        }
-
-        return $request->validate($rules);
+        return redirect()->route('tickets.index')->with('status', 'Ticket verwijderd.');
     }
 }
