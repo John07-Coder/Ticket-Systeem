@@ -31,6 +31,20 @@ class TicketPolicy
         return $user->role === 'agent' && $ticket->assigned_to === $user->id;
     }
 
+    public function updateContent(User $user, Ticket $ticket): bool
+    {
+        return $user->role === 'admin' || $ticket->created_by === $user->id;
+    }
+
+    public function claim(User $user, Ticket $ticket): bool
+    {
+        if ($ticket->assigned_to !== null) {
+            return false;
+        }
+
+        return $user->role === 'agent' || $user->role === 'admin';
+    }
+
     public function delete(User $user, Ticket $ticket): bool
     {
         return $user->role === 'admin' || $ticket->created_by === $user->id;

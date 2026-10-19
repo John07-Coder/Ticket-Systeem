@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Category;
 use App\Models\Comment;
 use App\Models\Ticket;
+use App\Models\TicketActivity;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -244,6 +245,86 @@ class TicketScenariosTest extends TestCase
             ->assertRedirect(route('tickets.index'));
 
         $this->assertModelMissing($ticket);
+    }
+
+    public function test_an_agent_can_claim_an_unassigned_ticket_without_changing_the_report(): void
+    {
+        $jan = User::factory()->create(['role' => 'employee', 'name' => 'Jan']);
+        $piet = User::factory()->create(['role' => 'agent', 'name' => 'Piet']);
+        $category = Category::factory()->create();
+
+        $ticket = Ticket::factory()->create([
+            'created_by' => $jan->id,
+            'assigned_to' => null,
+            'category_id' => $category->id,
+            'status' => 'open',
+            'priority' => 'normal',
+            'title' => 'Printer van Jan',
+            'description' => 'De printer doet het niet.',
+        ]);
+
+        $this->actingAs($jan)->post(route('tickets.claim', $ticket))->assertForbidden();
+
+        $this->actingAs($piet)
+            ->get(route('tickets.show', $ticket))
+            ->assertOk()
+            ->assertSee('Overnemen')
+            ->assertSee('heeft het ticket aangemaakt');
+
+        $this->actingAs($piet)
+            ->post(route('tickets.claim', $ticket))
+            ->assertRedirect(route('tickets.show', $ticket));
+
+        $this->assertSame($piet->id, $ticket->fresh()->assigned_to);
+        $this->assertDatabaseHas('ticket_activities', [
+            'ticket_id' => $ticket->id,
+            'user_id' => $piet->id,
+            'type' => 'claimed',
+        ]);
+
+        $this->actingAs($piet)
+            ->put(route('tickets.update', $ticket), [
+                'title' => 'Aangepaste titel',
+                'description' => 'Aangepaste tekst',
+                'category_id' => $category->id,
+                'priority' => 'high',
+                'status' => 'closed',
+                'assigned_to' => $piet->id,
+            ])
+            ->assertRedirect(route('tickets.show', $ticket));
+
+        $ticket->refresh();
+        $this->assertSame('Printer van Jan', $ticket->title);
+        $this->assertSame('De printer doet het niet.', $ticket->description);
+        $this->assertSame('closed', $ticket->status);
+        $this->assertSame('high', $ticket->priority);
+
+        $this->assertDatabaseHas('ticket_activities', [
+            'ticket_id' => $ticket->id,
+            'user_id' => $piet->id,
+            'type' => 'status',
+            'from_value' => 'open',
+            'to_value' => 'closed',
+        ]);
+
+        $this->assertSame(0, TicketActivity::query()->where('ticket_id', $ticket->id)->where('field', 'title')->count());
+    }
+
+    public function test_an_agent_cannot_claim_a_ticket_assigned_to_someone_else(): void
+    {
+        $employee = User::factory()->create(['role' => 'employee']);
+        $piet = User::factory()->create(['role' => 'agent']);
+        $other = User::factory()->create(['role' => 'agent']);
+        $category = Category::factory()->create();
+
+        $ticket = Ticket::factory()->create([
+            'created_by' => $employee->id,
+            'assigned_to' => $other->id,
+            'category_id' => $category->id,
+        ]);
+
+        $this->actingAs($piet)->post(route('tickets.claim', $ticket))->assertForbidden();
+        $this->assertSame($other->id, $ticket->fresh()->assigned_to);
     }
 
     public function test_a_ticket_can_only_be_assigned_to_an_agent_or_admin(): void

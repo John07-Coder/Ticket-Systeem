@@ -60,4 +60,21 @@ class Ticket extends Model
     {
         return $this->hasMany(Comment::class);
     }
+
+    /** @return HasMany<TicketActivity, $this> */
+    public function activities(): HasMany
+    {
+        return $this->hasMany(TicketActivity::class)->oldest();
+    }
+
+    public function log(User $user, string $type, ?string $field = null, ?string $from = null, ?string $to = null): void
+    {
+        $this->activities()->create([
+            'user_id' => $user->id,
+            'type' => $type,
+            'field' => $field,
+            'from_value' => $from,
+            'to_value' => $to,
+        ]);
+    }
 }

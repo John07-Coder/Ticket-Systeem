@@ -27,15 +27,27 @@
         </div>
     @endif
 
-    <label class="field">
-        Titel
-        <input type="text" name="title" value="{{ old('title', $ticket->title ?? '') }}" required>
-    </label>
+    @if (! isset($ticket) || auth()->user()->can('updateContent', $ticket))
+        <label class="field">
+            Titel
+            <input type="text" name="title" value="{{ old('title', $ticket->title ?? '') }}" required>
+        </label>
 
-    <label class="field">
-        Beschrijving
-        <textarea name="description" rows="6" required>{{ old('description', $ticket->description ?? '') }}</textarea>
-    </label>
+        <label class="field">
+            Beschrijving
+            <textarea name="description" rows="6" required>{{ old('description', $ticket->description ?? '') }}</textarea>
+        </label>
+    @else
+        <div class="field">
+            Titel
+            <p class="locked">{{ $ticket->title }}</p>
+        </div>
+
+        <div class="field">
+            Beschrijving
+            <p class="locked">{{ $ticket->description }}</p>
+        </div>
+    @endif
 
     <label class="field">
         Categorie
