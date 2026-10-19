@@ -16,7 +16,7 @@ return new class extends Migration
 
             $table->foreignId('ticket_id')
             ->constrained()
-            ->cascadeoOnDelete();
+            ->cascadeOnDelete();
 
             $table->foreignId('user_id')
             ->constrained();

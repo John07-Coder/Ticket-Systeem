@@ -2,10 +2,14 @@
 
 namespace App\Models;
 
+use Database\Factories\TicketFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Ticket extends Model
 {
+    /** @use HasFactory<TicketFactory> */
+    use HasFactory;
 
 public function creator()
 {
@@ -14,7 +18,7 @@ public function creator()
 
 public function assignee()
 {
-    return $this->belongsTo(User::class, "assisgned_to");
+    return $this->belongsTo(User::class, 'assigned_to');
 }
 
 public function category()
