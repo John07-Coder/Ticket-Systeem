@@ -13,6 +13,8 @@ class TicketController extends Controller
 {
     public function index(): View
     {
+        $this->authorize('viewAny', Ticket::class);
+
         $user = request()->user();
 
         $query = Ticket::with(['category', 'creator', 'assignee']);
@@ -40,6 +42,8 @@ class TicketController extends Controller
 
     public function create(): View
     {
+        $this->authorize('create', Ticket::class);
+
         $categories = Category::orderBy('name')->get();
         $agents = User::whereIn('role', ['admin', 'agent'])->orderBy('name')->get();
 
@@ -48,6 +52,8 @@ class TicketController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        $this->authorize('create', Ticket::class);
+
         $user = $request->user();
 
         $rules = [
@@ -79,11 +85,9 @@ class TicketController extends Controller
 
     public function show(Ticket $ticket): View
     {
-        $user = request()->user();
+        $this->authorize('view', $ticket);
 
-        if ($user->role === 'employee' && $ticket->created_by !== $user->id) {
-            abort(403);
-        }
+        $user = request()->user();
 
         $ticket->load(['category', 'creator', 'assignee']);
 
@@ -100,11 +104,7 @@ class TicketController extends Controller
 
     public function edit(Ticket $ticket): View
     {
-        $user = request()->user();
-
-        if ($user->role !== 'admin' && $ticket->created_by !== $user->id && ! ($user->role === 'agent' && $ticket->assigned_to === $user->id)) {
-            abort(403);
-        }
+        $this->authorize('update', $ticket);
 
         $categories = Category::orderBy('name')->get();
         $agents = User::whereIn('role', ['admin', 'agent'])->orderBy('name')->get();
@@ -114,11 +114,9 @@ class TicketController extends Controller
 
     public function update(Request $request, Ticket $ticket): RedirectResponse
     {
-        $user = $request->user();
+        $this->authorize('update', $ticket);
 
-        if ($user->role !== 'admin' && $ticket->created_by !== $user->id && ! ($user->role === 'agent' && $ticket->assigned_to === $user->id)) {
-            abort(403);
-        }
+        $user = $request->user();
 
         $rules = [
             'title' => ['required', 'string', 'max:255'],
@@ -151,11 +149,7 @@ class TicketController extends Controller
 
     public function destroy(Ticket $ticket): RedirectResponse
     {
-        $user = request()->user();
-
-        if ($user->role !== 'admin' && $ticket->created_by !== $user->id) {
-            abort(403);
-        }
+        $this->authorize('delete', $ticket);
 
         $ticket->delete();
 

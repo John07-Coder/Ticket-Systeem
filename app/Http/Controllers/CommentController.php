@@ -11,11 +11,9 @@ class CommentController extends Controller
 {
     public function store(Request $request, Ticket $ticket): RedirectResponse
     {
-        $user = $request->user();
+        $this->authorize('create', [Comment::class, $ticket]);
 
-        if ($user->role === 'employee' && $ticket->created_by !== $user->id) {
-            abort(403);
-        }
+        $user = $request->user();
 
         $data = $request->validate([
             'message' => ['required', 'string', 'max:5000'],
@@ -32,11 +30,9 @@ class CommentController extends Controller
 
     public function update(Request $request, Ticket $ticket, Comment $comment): RedirectResponse
     {
-        $user = $request->user();
+        $this->authorize('update', $comment);
 
-        if ($comment->user_id !== $user->id) {
-            abort(403);
-        }
+        $user = $request->user();
 
         $data = $request->validate([
             'message' => ['required', 'string', 'max:5000'],
@@ -55,11 +51,7 @@ class CommentController extends Controller
 
     public function destroy(Ticket $ticket, Comment $comment): RedirectResponse
     {
-        $user = request()->user();
-
-        if ($user->role !== 'admin' && $comment->user_id !== $user->id) {
-            abort(403);
-        }
+        $this->authorize('delete', $comment);
 
         $comment->delete();
 
