@@ -196,6 +196,10 @@ select:focus[data-flux-control] {
 [data-flux-main] .row-in_progress { border-left-color: #f59e0b; }
 [data-flux-main] .row-closed { border-left-color: #818cf8; }
 
+[data-flux-main] .pager {
+    margin-top: 0.85rem;
+}
+
 [data-flux-main] .board {
     display: grid;
     gap: 1rem;

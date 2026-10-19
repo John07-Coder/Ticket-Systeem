@@ -1,6 +1,6 @@
 <section class="lane lane-{{ $tone }}">
     <header class="lane-head">
-        <h2>{{ $heading }} <span class="count">{{ $tickets->count() }}</span></h2>
+        <h2>{{ $heading }} <span class="count">{{ $total ?? $tickets->count() }}</span></h2>
         @isset($more)
             <a href="{{ $more }}" class="back">Alles bekijken</a>
         @endisset
@@ -18,7 +18,11 @@
                 @endif
             </a>
         @empty
-            <p class="empty">{{ $empty }}</p>
+            <p class="empty">{{ ($total ?? 0) === 0 ? $empty : 'Geen tickets op deze pagina.' }}</p>
         @endforelse
     </div>
+
+    @if ($tickets instanceof \Illuminate\Contracts\Pagination\Paginator && $tickets->hasPages())
+        <div class="pager">{{ $tickets->links() }}</div>
+    @endif
 </section>
