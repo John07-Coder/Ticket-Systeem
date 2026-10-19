@@ -4,10 +4,10 @@
             <div>
                 <h1>Tickets</h1>
                 <p class="lead">
-                    @if (auth()->user()->isStaff())
-                        Alle meldingen.
+                    @if (auth()->user()->role === 'employee')
+                        Dit zijn de tickets die jij hebt gemaakt.
                     @else
-                        Meldingen die jij hebt aangemaakt.
+                        Jouw tickets staan apart van tickets die anderen hebben gemaakt.
                     @endif
                 </p>
             </div>
@@ -26,18 +26,18 @@
             @endforeach
         </nav>
 
-        <div class="panel">
-            @forelse ($tickets as $ticket)
-                <a href="{{ route('tickets.show', $ticket) }}" class="row row-{{ $ticket->status }}">
-                    <strong>{{ $ticket->title }}</strong>
-                    @include('tickets.partials.meta')
-                    @if (auth()->user()->isStaff())
-                        <p class="lead">Toegewezen aan {{ $ticket->assignee->name ?? 'niemand' }}</p>
-                    @endif
-                </a>
-            @empty
-                <p class="empty">Er zijn nog geen tickets.</p>
-            @endforelse
-        </div>
+        @include('tickets.partials.list', [
+            'heading' => 'Jouw tickets',
+            'tickets' => $myTickets,
+            'empty' => 'Je hebt nog geen tickets gemaakt.',
+        ])
+
+        @if (auth()->user()->role !== 'employee')
+            @include('tickets.partials.list', [
+                'heading' => 'Tickets van anderen',
+                'tickets' => $otherTickets,
+                'empty' => 'Er zijn geen tickets van anderen.',
+            ])
+        @endif
     </div>
 </x-layouts::app>

@@ -85,4 +85,36 @@ class TicketPagesTest extends TestCase
         $this->assertSame('Wifi ligt eruit', $ticket->title);
         $this->assertSame($agent->id, $ticket->created_by);
     }
+
+    public function test_agent_can_only_edit_and_delete_tickets_they_created(): void
+    {
+        $agent = User::factory()->create(['role' => 'agent']);
+        $employee = User::factory()->create(['role' => 'employee']);
+        $category = Category::factory()->create();
+
+        $own = Ticket::factory()->create([
+            'created_by' => $agent->id,
+            'category_id' => $category->id,
+            'title' => 'Ticket van de agent',
+        ]);
+
+        $foreign = Ticket::factory()->create([
+            'created_by' => $employee->id,
+            'category_id' => $category->id,
+            'title' => 'Ticket van een medewerker',
+        ]);
+
+        $this->actingAs($agent)
+            ->get(route('tickets.index'))
+            ->assertOk()
+            ->assertSee('Jouw tickets')
+            ->assertSee('Tickets van anderen')
+            ->assertSee('Ticket van de agent')
+            ->assertSee('Ticket van een medewerker');
+
+        $this->actingAs($agent)->get(route('tickets.show', $foreign))->assertOk()->assertDontSee('>Bewerken<', false);
+        $this->actingAs($agent)->get(route('tickets.edit', $foreign))->assertForbidden();
+        $this->actingAs($agent)->delete(route('tickets.destroy', $foreign))->assertForbidden();
+        $this->actingAs($agent)->get(route('tickets.edit', $own))->assertOk();
+    }
 }

@@ -29,7 +29,7 @@
 
                 <textarea name="message" rows="3" required>{{ $comment->message }}</textarea>
 
-                @if (auth()->user()->isStaff())
+                @if (auth()->user()->role !== 'employee')
                     <label class="check">
                         <input type="checkbox" name="is_internal" value="1" @checked($comment->is_internal)>
                         Interne notitie
