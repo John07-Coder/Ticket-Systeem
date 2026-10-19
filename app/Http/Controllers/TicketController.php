@@ -12,7 +12,19 @@ class TicketController extends Controller
      */
     public function index()
     {
-        //
+
+            $user = auth()->user();
+
+    $query = Ticket::with(['category', 'creator']);
+
+    if ($user->role === 'employee') {
+        $query->where('created_by', $user->id);
+    }
+
+    $tickets = $query->latest()->get();
+
+    return view('tickets.index', compact('tickets'));
+
     }
 
     /**
