@@ -700,6 +700,7 @@ body:has(> [data-flux-main]) {
 }
 
 [data-flux-main] .errors {
+    margin-bottom: 1rem;
     background: #fef2f2;
     color: #991b1b;
 }
