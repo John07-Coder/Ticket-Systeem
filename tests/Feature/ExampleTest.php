@@ -14,5 +14,7 @@ class ExampleTest extends TestCase
         $response = $this->get(route('home'));
 
         $response->assertOk();
+        $response->assertSee('Meld het. Wij pakken het op.');
+        $response->assertDontSee("Let's get started");
     }
 }

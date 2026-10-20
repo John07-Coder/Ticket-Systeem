@@ -107,8 +107,9 @@ class TicketPagesTest extends TestCase
         $this->actingAs($agent)
             ->get(route('tickets.index'))
             ->assertOk()
-            ->assertSee('Jouw tickets')
-            ->assertSee('Tickets van anderen')
+            ->assertSee('Aan jou toegewezen')
+            ->assertSee('Door jou gemaakt')
+            ->assertSee('Overige tickets')
             ->assertSee('Ticket van de agent')
             ->assertSee('Ticket van een medewerker');
 
