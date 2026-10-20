@@ -30,11 +30,11 @@ Beschrijving, details en reacties. Een agent kan een interne notitie plaatsen di
 
 - Tickets aanmaken, bekijken, filteren, bewerken en verwijderen.
 - Reageren op een ticket, ook met een interne notitie.
-- Een ticket kan alleen worden toegewezen aan een agent of een admin.
+- Een ticket kan alleen worden toegewezen aan een agent of een admin. Alleen een admin wijst een ticket toe aan iemand anders. Een agent kan een niet-toegewezen ticket wel zelf overnemen.
 - Drie rollen:
   - **Medewerker** ziet alleen eigen tickets en mag die bewerken en verwijderen.
-  - **Agent** ziet alle tickets en kan een niet-toegewezen ticket overnemen. Bewerken mag bij een ticket dat hij zelf maakte, of dat aan hem is toegewezen. De titel en beschrijving van de melder wijzigt hij niet. Verwijderen mag alleen bij een eigen ticket.
-  - **Admin** mag elk ticket bewerken en verwijderen, en elke reactie verwijderen.
+  - **Agent** ziet alle tickets en kan een niet-toegewezen ticket overnemen. Bewerken mag bij een ticket dat hij zelf maakte, of dat aan hem is toegewezen. Hij wijst het niet toe aan een andere agent. De titel en beschrijving van de melder wijzigt hij niet. Verwijderen mag alleen bij een eigen ticket.
+  - **Admin** mag elk ticket bewerken, toewijzen en verwijderen, en elke reactie verwijderen.
 
 ## Starten
 
