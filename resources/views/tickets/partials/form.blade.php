@@ -72,7 +72,7 @@
         </select>
     </label>
 
-    @if (auth()->user()->role !== 'employee')
+    @if (auth()->user()->role === 'admin')
         <label class="field">
             Toegewezen aan
             <select name="assigned_to">
@@ -84,7 +84,14 @@
                 @endforeach
             </select>
         </label>
+    @elseif (auth()->user()->role === 'agent')
+        <div class="field">
+            Toegewezen aan
+            <p class="locked">{{ isset($ticket) ? ($ticket->assignee?->name ?? 'Niemand') : 'Niemand' }}</p>
+        </div>
+    @endif
 
+    @if (auth()->user()->role !== 'employee')
         <label class="field">
             Status
             <select name="status">

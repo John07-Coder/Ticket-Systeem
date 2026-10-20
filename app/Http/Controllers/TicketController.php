@@ -56,7 +56,9 @@ class TicketController extends Controller
         $this->authorize('create', Ticket::class);
 
         $categories = Category::orderBy('name')->get();
-        $agents = User::whereIn('role', ['admin', 'agent'])->orderBy('name')->get();
+        $agents = request()->user()->role === 'admin'
+            ? User::whereIn('role', ['admin', 'agent'])->orderBy('name')->get()
+            : collect();
 
         return view('tickets.create', compact('categories', 'agents'));
     }
@@ -74,8 +76,15 @@ class TicketController extends Controller
             'priority' => ['required', 'in:low,normal,high'],
         ];
 
-        if ($user->role !== 'employee') {
+        if ($user->role === 'admin') {
             $rules['assigned_to'] = ['nullable', Rule::exists('users', 'id')->where(fn ($query) => $query->whereIn('role', ['admin', 'agent']))];
+            $rules['status'] = ['required', 'in:open,in_progress,closed'];
+        } elseif ($user->role === 'agent') {
+            $rules['assigned_to'] = ['nullable', function (string $attribute, mixed $value, \Closure $fail) use ($user): void {
+                if ($value !== null && (int) $value !== (int) $user->id) {
+                    $fail('Alleen een admin kan een ticket aan iemand anders toewijzen.');
+                }
+            }];
             $rules['status'] = ['required', 'in:open,in_progress,closed'];
         }
 
@@ -83,9 +92,17 @@ class TicketController extends Controller
             'assigned_to.exists' => 'Wijs het ticket toe aan een agent of een admin.',
         ]);
 
+        if ($user->role === 'admin') {
+            $assignedTo = $data['assigned_to'] ?? null;
+        } elseif ($user->role === 'agent' && filled($data['assigned_to'] ?? null)) {
+            $assignedTo = $user->id;
+        } else {
+            $assignedTo = null;
+        }
+
         $ticket = Ticket::create([
             'created_by' => $user->id,
-            'assigned_to' => $user->role === 'employee' ? null : ($data['assigned_to'] ?? null),
+            'assigned_to' => $assignedTo,
             'category_id' => $data['category_id'],
             'title' => $data['title'],
             'description' => $data['description'],
@@ -126,7 +143,9 @@ class TicketController extends Controller
         $this->authorize('update', $ticket);
 
         $categories = Category::orderBy('name')->get();
-        $agents = User::whereIn('role', ['admin', 'agent'])->orderBy('name')->get();
+        $agents = request()->user()->role === 'admin'
+            ? User::whereIn('role', ['admin', 'agent'])->orderBy('name')->get()
+            : collect();
 
         return view('tickets.edit', compact('ticket', 'categories', 'agents'));
     }
@@ -147,8 +166,18 @@ class TicketController extends Controller
             $rules['description'] = ['required', 'string'];
         }
 
-        if ($user->role !== 'employee') {
+        if ($user->role === 'admin') {
             $rules['assigned_to'] = ['nullable', Rule::exists('users', 'id')->where(fn ($query) => $query->whereIn('role', ['admin', 'agent']))];
+            $rules['status'] = ['required', 'in:open,in_progress,closed'];
+        } elseif ($user->role === 'agent') {
+            $rules['assigned_to'] = ['nullable', function (string $attribute, mixed $value, \Closure $fail) use ($ticket): void {
+                $incoming = $value === null || $value === '' ? null : (int) $value;
+                $current = $ticket->assigned_to === null ? null : (int) $ticket->assigned_to;
+
+                if ($incoming !== $current) {
+                    $fail('Alleen een admin kan een ticket aan iemand anders toewijzen.');
+                }
+            }];
             $rules['status'] = ['required', 'in:open,in_progress,closed'];
         }
 
@@ -172,8 +201,10 @@ class TicketController extends Controller
         $ticket->category_id = $data['category_id'];
         $ticket->priority = $data['priority'];
 
-        if ($user->role !== 'employee') {
+        if ($user->role === 'admin') {
             $ticket->assigned_to = $data['assigned_to'] ?? null;
+            $ticket->status = $data['status'];
+        } elseif ($user->role === 'agent') {
             $ticket->status = $data['status'];
         }
 

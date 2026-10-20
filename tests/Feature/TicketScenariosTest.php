@@ -129,13 +129,12 @@ class TicketScenariosTest extends TestCase
                 'category_id' => $category->id,
                 'priority' => 'normal',
                 'status' => 'closed',
-                'assigned_to' => $colleague->id,
             ])
             ->assertRedirect(route('tickets.show', $ticket));
 
         $ticket->refresh();
         $this->assertSame('closed', $ticket->status);
-        $this->assertSame($colleague->id, $ticket->assigned_to);
+        $this->assertNotSame($colleague->id, $ticket->assigned_to);
 
         $this->actingAs($agent)
             ->delete(route('tickets.destroy', $ticket))
@@ -365,6 +364,64 @@ class TicketScenariosTest extends TestCase
             ->assertSessionHasErrors('assigned_to');
 
         $this->assertSame($agent->id, $ticket->fresh()->assigned_to);
+    }
+
+    public function test_an_agent_cannot_assign_a_ticket_to_another_agent(): void
+    {
+        $agent = User::factory()->create(['role' => 'agent']);
+        $colleague = User::factory()->create(['role' => 'agent']);
+        $admin = User::factory()->create(['role' => 'admin']);
+        $category = Category::factory()->create();
+
+        $this->actingAs($agent)
+            ->post(route('tickets.store'), [
+                'title' => 'Printer werkt niet',
+                'description' => 'Er komt niets uit.',
+                'category_id' => $category->id,
+                'priority' => 'normal',
+                'status' => 'open',
+                'assigned_to' => $colleague->id,
+            ])
+            ->assertSessionHasErrors('assigned_to');
+
+        $this->assertSame(0, Ticket::count());
+
+        $ticket = Ticket::factory()->create([
+            'created_by' => $agent->id,
+            'assigned_to' => $agent->id,
+            'category_id' => $category->id,
+            'status' => 'open',
+            'priority' => 'normal',
+            'title' => 'Blijft bij de agent',
+            'description' => 'Niet doorgeven.',
+        ]);
+
+        $this->actingAs($agent)
+            ->put(route('tickets.update', $ticket), [
+                'title' => $ticket->title,
+                'description' => $ticket->description,
+                'category_id' => $category->id,
+                'priority' => 'normal',
+                'status' => 'in_progress',
+                'assigned_to' => $colleague->id,
+            ])
+            ->assertSessionHasErrors('assigned_to');
+
+        $this->assertSame($agent->id, $ticket->fresh()->assigned_to);
+        $this->assertSame('open', $ticket->fresh()->status);
+
+        $this->actingAs($admin)
+            ->put(route('tickets.update', $ticket), [
+                'title' => $ticket->title,
+                'description' => $ticket->description,
+                'category_id' => $category->id,
+                'priority' => 'normal',
+                'status' => 'in_progress',
+                'assigned_to' => $colleague->id,
+            ])
+            ->assertRedirect(route('tickets.show', $ticket));
+
+        $this->assertSame($colleague->id, $ticket->fresh()->assigned_to);
     }
 
     public function test_the_ticket_overview_is_split_into_pages_of_fifteen(): void
