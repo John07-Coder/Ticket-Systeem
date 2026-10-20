@@ -26,13 +26,23 @@ class DashboardController extends Controller
         ];
 
         $unassigned = null;
+        $assignedToMe = null;
+        $assigned = collect();
 
         if ($user->role !== 'employee') {
             $unassigned = (clone $query)->whereNull('assigned_to')->where('status', '!=', 'closed')->count();
+            $assignedToMe = (clone $query)->where('assigned_to', $user->id)->where('status', '!=', 'closed')->count();
+            $assigned = (clone $query)
+                ->where('assigned_to', $user->id)
+                ->where('status', '!=', 'closed')
+                ->with(['category', 'creator', 'assignee'])
+                ->latest()
+                ->limit(6)
+                ->get();
         }
 
-        $recent = (clone $query)->with(['category', 'creator'])->latest()->limit(6)->get();
+        $recent = (clone $query)->with(['category', 'creator', 'assignee'])->latest()->limit(6)->get();
 
-        return view('dashboard', compact('counts', 'unassigned', 'recent'));
+        return view('dashboard', compact('counts', 'unassigned', 'assignedToMe', 'assigned', 'recent'));
     }
 }

@@ -22,15 +22,37 @@
 
             @if (auth()->user()->role !== 'employee')
                 @include('partials.stat', ['tone' => 'free', 'label' => 'Niet toegewezen', 'value' => $unassigned, 'href' => route('tickets.index', ['assigned' => 'none'])])
+                @include('partials.stat', ['tone' => 'mine', 'label' => 'Aan jou toegewezen', 'value' => $assignedToMe, 'href' => route('tickets.index')])
             @endif
         </div>
 
-        @include('tickets.partials.list', [
-            'tone' => 'recent',
-            'heading' => 'Recente tickets',
-            'tickets' => $recent,
-            'empty' => 'Er zijn nog geen tickets.',
-            'more' => route('tickets.index'),
-        ])
+        @if (auth()->user()->role !== 'employee')
+            <div class="board board-split">
+                @include('tickets.partials.list', [
+                    'tone' => 'assigned',
+                    'heading' => 'Aan jou toegewezen',
+                    'tickets' => $assigned,
+                    'total' => $assignedToMe,
+                    'empty' => 'Er zijn geen open tickets aan jou toegewezen.',
+                    'more' => route('tickets.index'),
+                ])
+
+                @include('tickets.partials.list', [
+                    'tone' => 'recent',
+                    'heading' => 'Recente tickets',
+                    'tickets' => $recent,
+                    'empty' => 'Er zijn nog geen tickets.',
+                    'more' => route('tickets.index'),
+                ])
+            </div>
+        @else
+            @include('tickets.partials.list', [
+                'tone' => 'recent',
+                'heading' => 'Recente tickets',
+                'tickets' => $recent,
+                'empty' => 'Er zijn nog geen tickets.',
+                'more' => route('tickets.index'),
+            ])
+        @endif
     </div>
 </x-layouts::app>

@@ -2,7 +2,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
 <title>
-    {{ filled($title ?? null) ? $title.' - '.config('app.name', 'Laravel') : config('app.name', 'Laravel') }}
+    @if (filled($title ?? null) && ($standaloneTitle ?? false))
+        {{ $title }}
+    @elseif (filled($title ?? null))
+        {{ $title }} - {{ config('app.name', 'Laravel') }}
+    @else
+        {{ config('app.name', 'Laravel') }}
+    @endif
 </title>
 
 <link rel="icon" href="/favicon.ico" sizes="any">

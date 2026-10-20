@@ -12,9 +12,13 @@
                 @include('tickets.partials.meta')
                 <strong>{{ $ticket->title }}</strong>
                 @if (auth()->user()->role !== 'employee')
-                    <p class="who {{ $ticket->assignee ? '' : 'who-none' }}">
-                        {{ $ticket->assignee ? 'Toegewezen aan '.$ticket->assignee->name : 'Niet toegewezen' }}
-                    </p>
+                    @if ($ticket->assigned_to !== null && (int) $ticket->assigned_to === (int) auth()->id())
+                        <p class="who who-mine">Aan jou toegewezen</p>
+                    @elseif ($ticket->assignee)
+                        <p class="who">Toegewezen aan {{ $ticket->assignee->name }}</p>
+                    @else
+                        <p class="who who-none">Niet toegewezen</p>
+                    @endif
                 @endif
             </a>
         @empty

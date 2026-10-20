@@ -7,7 +7,7 @@
                     @if (auth()->user()->role === 'employee')
                         Dit zijn de tickets die jij hebt gemaakt.
                     @else
-                        Links jouw tickets, rechts de tickets van anderen.
+                        Links de tickets die aan jou zijn toegewezen.
                     @endif
                 </p>
             </div>
@@ -26,10 +26,20 @@
             @endforeach
         </nav>
 
-        <div class="board {{ auth()->user()->role === 'employee' ? '' : 'board-split' }}">
+        <div class="board {{ auth()->user()->role === 'employee' ? '' : 'board-three' }}">
+            @if (auth()->user()->role !== 'employee')
+                @include('tickets.partials.list', [
+                    'tone' => 'assigned',
+                    'heading' => 'Aan jou toegewezen',
+                    'tickets' => $assignedTickets,
+                    'total' => $assignedTickets->total(),
+                    'empty' => 'Er zijn geen tickets aan jou toegewezen.',
+                ])
+            @endif
+
             @include('tickets.partials.list', [
                 'tone' => 'mine',
-                'heading' => 'Jouw tickets',
+                'heading' => auth()->user()->role === 'employee' ? 'Jouw tickets' : 'Door jou gemaakt',
                 'tickets' => $myTickets,
                 'total' => $myTickets->total(),
                 'empty' => 'Je hebt nog geen tickets gemaakt.',
@@ -38,10 +48,10 @@
             @if (auth()->user()->role !== 'employee')
                 @include('tickets.partials.list', [
                     'tone' => 'other',
-                    'heading' => 'Tickets van anderen',
+                    'heading' => 'Overige tickets',
                     'tickets' => $otherTickets,
                     'total' => $otherTickets->total(),
-                    'empty' => 'Er zijn geen tickets van anderen.',
+                    'empty' => 'Er zijn geen overige tickets.',
                 ])
             @endif
         </div>

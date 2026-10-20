@@ -35,14 +35,20 @@ class TicketController extends Controller
         }
 
         if ($user->role === 'employee') {
+            $assignedTickets = collect();
             $myTickets = $query->latest()->paginate(15)->withQueryString();
             $otherTickets = collect();
         } else {
-            $myTickets = (clone $query)->where('created_by', $user->id)->latest()->paginate(15, ['*'], 'mine')->withQueryString();
-            $otherTickets = (clone $query)->where('created_by', '!=', $user->id)->latest()->paginate(15, ['*'], 'others')->withQueryString();
+            $notMine = function ($inner) use ($user) {
+                $inner->where('assigned_to', '!=', $user->id)->orWhereNull('assigned_to');
+            };
+
+            $assignedTickets = (clone $query)->where('assigned_to', $user->id)->latest()->paginate(15, ['*'], 'assigned')->withQueryString();
+            $myTickets = (clone $query)->where('created_by', $user->id)->where($notMine)->latest()->paginate(15, ['*'], 'mine')->withQueryString();
+            $otherTickets = (clone $query)->where('created_by', '!=', $user->id)->where($notMine)->latest()->paginate(15, ['*'], 'others')->withQueryString();
         }
 
-        return view('tickets.index', compact('myTickets', 'otherTickets', 'status'));
+        return view('tickets.index', compact('assignedTickets', 'myTickets', 'otherTickets', 'status'));
     }
 
     public function create(): View

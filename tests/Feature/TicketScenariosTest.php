@@ -423,6 +423,40 @@ class TicketScenariosTest extends TestCase
         $this->assertSame(0, Ticket::count());
     }
 
+    public function test_an_agent_sees_tickets_assigned_to_them_in_their_own_column(): void
+    {
+        $piet = User::factory()->create(['role' => 'agent', 'name' => 'Piet']);
+        $jan = User::factory()->create(['role' => 'employee']);
+        $other = User::factory()->create(['role' => 'agent']);
+        $category = Category::factory()->create();
+
+        Ticket::factory()->create([
+            'created_by' => $jan->id,
+            'assigned_to' => $piet->id,
+            'category_id' => $category->id,
+            'title' => 'Printer van Jan',
+        ]);
+
+        Ticket::factory()->create([
+            'created_by' => $jan->id,
+            'assigned_to' => $other->id,
+            'category_id' => $category->id,
+            'title' => 'Ticket van een collega',
+        ]);
+
+        $response = $this->actingAs($piet)->get(route('tickets.index'));
+
+        $response->assertOk()->assertSee('Aan jou toegewezen');
+
+        $assigned = $response->viewData('assignedTickets')->getCollection();
+        $others = $response->viewData('otherTickets')->getCollection();
+
+        $this->assertTrue($assigned->contains('title', 'Printer van Jan'));
+        $this->assertFalse($assigned->contains('title', 'Ticket van een collega'));
+        $this->assertTrue($others->contains('title', 'Ticket van een collega'));
+        $this->assertFalse($others->contains('title', 'Printer van Jan'));
+    }
+
     public function test_status_filter_and_unassigned_filter(): void
     {
         $agent = User::factory()->create(['role' => 'agent']);

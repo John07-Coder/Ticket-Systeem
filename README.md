@@ -12,7 +12,7 @@ Aantallen per status, plus de laatste tickets.
 
 ### Ticketoverzicht
 
-Eigen tickets staan links. Tickets van anderen staan rechts. Elke kaart toont status, prioriteit, categorie en aan wie het ticket is toegewezen.
+Voor een agent of admin staan de tickets die aan hem zijn toegewezen links, onder **Aan jou toegewezen**. Daarnaast staan tickets die hij zelf maakte, en de overige tickets. Elke kaart toont status, prioriteit, categorie en aan wie het ticket is toegewezen.
 
 ![Ticketbord met eigen tickets en tickets van anderen](docs/screenshots/tickets.png)
 
