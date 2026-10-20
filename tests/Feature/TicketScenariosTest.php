@@ -8,6 +8,7 @@ use App\Models\Ticket;
 use App\Models\TicketActivity;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class TicketScenariosTest extends TestCase
@@ -324,6 +325,72 @@ class TicketScenariosTest extends TestCase
 
         $this->actingAs($piet)->post(route('tickets.claim', $ticket))->assertForbidden();
         $this->assertSame($other->id, $ticket->fresh()->assigned_to);
+    }
+
+    public function test_a_claim_is_lost_when_another_agent_takes_the_ticket_first(): void
+    {
+        $employee = User::factory()->create(['role' => 'employee']);
+        $piet = User::factory()->create(['role' => 'agent', 'name' => 'Piet']);
+        $other = User::factory()->create(['role' => 'agent', 'name' => 'Andere']);
+        $category = Category::factory()->create();
+
+        $ticket = Ticket::factory()->create([
+            'created_by' => $employee->id,
+            'assigned_to' => null,
+            'category_id' => $category->id,
+        ]);
+
+        $steal = true;
+
+        DB::beforeExecuting(function (string $sql) use (&$steal, $other, $ticket) {
+            if (! $steal || ! str_contains(strtolower($sql), 'update') || ! str_contains($sql, 'assigned_to')) {
+                return;
+            }
+
+            $steal = false;
+
+            DB::table('tickets')->where('id', $ticket->id)->update([
+                'assigned_to' => $other->id,
+            ]);
+        });
+
+        $this->actingAs($piet)
+            ->post(route('tickets.claim', $ticket))
+            ->assertRedirect(route('tickets.show', $ticket))
+            ->assertSessionHas('error', 'Dit ticket is intussen door iemand anders overgenomen.');
+
+        $this->assertSame($other->id, $ticket->fresh()->assigned_to);
+        $this->assertSame(0, TicketActivity::query()->where('type', 'claimed')->count());
+    }
+
+    public function test_a_claim_is_rolled_back_when_the_history_cannot_be_saved(): void
+    {
+        $employee = User::factory()->create(['role' => 'employee']);
+        $piet = User::factory()->create(['role' => 'agent']);
+        $category = Category::factory()->create();
+
+        $ticket = Ticket::factory()->create([
+            'created_by' => $employee->id,
+            'assigned_to' => null,
+            'category_id' => $category->id,
+        ]);
+
+        $failed = false;
+
+        TicketActivity::creating(function () use (&$failed) {
+            if ($failed) {
+                return;
+            }
+
+            $failed = true;
+
+            throw new \RuntimeException('geschiedenis mislukt');
+        });
+
+        $this->actingAs($piet)->post(route('tickets.claim', $ticket))->assertStatus(500);
+
+        $this->assertNull($ticket->fresh()->assigned_to);
+        $this->assertSame(0, TicketActivity::query()->count());
     }
 
     public function test_a_ticket_can_only_be_assigned_to_an_agent_or_admin(): void

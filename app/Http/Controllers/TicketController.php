@@ -7,6 +7,7 @@ use App\Models\Ticket;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -100,21 +101,25 @@ class TicketController extends Controller
             $assignedTo = null;
         }
 
-        $ticket = Ticket::create([
-            'created_by' => $user->id,
-            'assigned_to' => $assignedTo,
-            'category_id' => $data['category_id'],
-            'title' => $data['title'],
-            'description' => $data['description'],
-            'status' => $user->role === 'employee' ? 'open' : $data['status'],
-            'priority' => $data['priority'],
-        ]);
+        $ticket = DB::transaction(function () use ($user, $data, $assignedTo): Ticket {
+            $ticket = Ticket::create([
+                'created_by' => $user->id,
+                'assigned_to' => $assignedTo,
+                'category_id' => $data['category_id'],
+                'title' => $data['title'],
+                'description' => $data['description'],
+                'status' => $user->role === 'employee' ? 'open' : $data['status'],
+                'priority' => $data['priority'],
+            ]);
 
-        $ticket->log($user, 'created');
+            $ticket->log($user, 'created');
 
-        if ($ticket->assigned_to) {
-            $ticket->log($user, 'assigned', 'assigned_to', 'niemand', User::find($ticket->assigned_to)?->name);
-        }
+            if ($ticket->assigned_to) {
+                $ticket->log($user, 'assigned', 'assigned_to', 'niemand', User::find($ticket->assigned_to)?->name);
+            }
+
+            return $ticket;
+        });
 
         return redirect()->route('tickets.show', $ticket)->with('status', 'Ticket aangemaakt.');
     }
@@ -193,53 +198,55 @@ class TicketController extends Controller
             'assignee' => $ticket->assigned_to === null ? 'niemand' : $ticket->assignee->name,
         ];
 
-        if ($user->can('updateContent', $ticket)) {
-            $ticket->title = $data['title'];
-            $ticket->description = $data['description'];
-        }
-
-        $ticket->category_id = $data['category_id'];
-        $ticket->priority = $data['priority'];
-
-        if ($user->role === 'admin') {
-            $ticket->assigned_to = $data['assigned_to'] ?? null;
-            $ticket->status = $data['status'];
-        } elseif ($user->role === 'agent') {
-            $ticket->status = $data['status'];
-        }
-
-        $ticket->save();
-        $ticket->load(['category', 'assignee']);
-
-        if ($ticket->wasChanged('title')) {
-            $ticket->log($user, 'updated', 'title');
-        }
-
-        if ($ticket->wasChanged('description')) {
-            $ticket->log($user, 'updated', 'description');
-        }
-
-        if ($ticket->wasChanged('category_id')) {
-            $ticket->log($user, 'updated', 'category', $before['category'], $ticket->category?->name);
-        }
-
-        if ($ticket->wasChanged('priority')) {
-            $ticket->log($user, 'updated', 'priority', $before['priority'], $ticket->priority);
-        }
-
-        if ($ticket->wasChanged('status')) {
-            $ticket->log($user, 'status', 'status', $before['status'], $ticket->status);
-        }
-
-        if ($ticket->wasChanged('assigned_to')) {
-            $to = $ticket->assigned_to === null ? 'niemand' : $ticket->assignee->name;
-
-            if ($before['assigned_to'] === null && (int) $ticket->assigned_to === (int) $user->id) {
-                $ticket->log($user, 'claimed', 'assigned_to', 'niemand', $to);
-            } else {
-                $ticket->log($user, 'assigned', 'assigned_to', $before['assignee'], $to);
+        DB::transaction(function () use ($ticket, $user, $data, $before): void {
+            if ($user->can('updateContent', $ticket)) {
+                $ticket->title = $data['title'];
+                $ticket->description = $data['description'];
             }
-        }
+
+            $ticket->category_id = $data['category_id'];
+            $ticket->priority = $data['priority'];
+
+            if ($user->role === 'admin') {
+                $ticket->assigned_to = $data['assigned_to'] ?? null;
+                $ticket->status = $data['status'];
+            } elseif ($user->role === 'agent') {
+                $ticket->status = $data['status'];
+            }
+
+            $ticket->save();
+            $ticket->load(['category', 'assignee']);
+
+            if ($ticket->wasChanged('title')) {
+                $ticket->log($user, 'updated', 'title');
+            }
+
+            if ($ticket->wasChanged('description')) {
+                $ticket->log($user, 'updated', 'description');
+            }
+
+            if ($ticket->wasChanged('category_id')) {
+                $ticket->log($user, 'updated', 'category', $before['category'], $ticket->category?->name);
+            }
+
+            if ($ticket->wasChanged('priority')) {
+                $ticket->log($user, 'updated', 'priority', $before['priority'], $ticket->priority);
+            }
+
+            if ($ticket->wasChanged('status')) {
+                $ticket->log($user, 'status', 'status', $before['status'], $ticket->status);
+            }
+
+            if ($ticket->wasChanged('assigned_to')) {
+                $to = $ticket->assigned_to === null ? 'niemand' : $ticket->assignee->name;
+
+                if ($before['assigned_to'] === null && (int) $ticket->assigned_to === (int) $user->id) {
+                    $ticket->log($user, 'claimed', 'assigned_to', 'niemand', $to);
+                } else {
+                    $ticket->log($user, 'assigned', 'assigned_to', $before['assignee'], $to);
+                }
+            }
+        });
 
         return redirect()->route('tickets.show', $ticket)->with('status', 'Ticket bijgewerkt.');
     }
@@ -250,10 +257,26 @@ class TicketController extends Controller
 
         $user = $request->user();
 
-        $ticket->update([
-            'assigned_to' => $user->id,
-        ]);
-        $ticket->log($user, 'claimed', 'assigned_to', 'niemand', $user->name);
+        $claimed = DB::transaction(function () use ($ticket, $user): bool {
+            $updated = Ticket::query()
+                ->whereKey($ticket->id)
+                ->whereNull('assigned_to')
+                ->update(['assigned_to' => $user->id]);
+
+            if ($updated !== 1) {
+                return false;
+            }
+
+            $ticket->log($user, 'claimed', 'assigned_to', 'niemand', $user->name);
+
+            return true;
+        });
+
+        if (! $claimed) {
+            return redirect()
+                ->route('tickets.show', $ticket)
+                ->with('error', 'Dit ticket is intussen door iemand anders overgenomen.');
+        }
 
         return redirect()->route('tickets.show', $ticket)->with('status', 'Ticket overgenomen.');
     }
